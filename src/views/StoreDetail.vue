@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { Bar, Line } from 'vue-chartjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js'
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
 
 const route = useRoute()
 const storeId = route.params.id
@@ -43,7 +47,14 @@ const storeData = ref({
       { name: 'プレミアムコース', price: 15000, popularity: 95 },
       { name: 'スタンダードコース', price: 8000, popularity: 88 },
       { name: 'ライトコース', price: 5000, popularity: 72 }
-    ]
+    ],
+    monthlyData: {
+      labels: ['10月', '11月', '12月', '1月', '2月', '3月'],
+      sales: [2650000, 2720000, 2800000, 2600000, 2750000, 2800000],
+      reservations: [450, 480, 520, 420, 490, 510],
+      visits: [380, 410, 440, 360, 420, 430],
+      pageViews: [12500, 13200, 14800, 11900, 13800, 14200]
+    }
   },
   'B001': {
     id: 'B001',
@@ -81,7 +92,14 @@ const storeData = ref({
       { name: 'スタンダードコース', price: 7000, popularity: 82 },
       { name: 'ライトコース', price: 4500, popularity: 75 },
       { name: 'ファミリーコース', price: 6000, popularity: 68 }
-    ]
+    ],
+    monthlyData: {
+      labels: ['10月', '11月', '12月', '1月', '2月', '3月'],
+      sales: [1580000, 1620000, 1650000, 1550000, 1600000, 1650000],
+      reservations: [280, 300, 320, 260, 290, 310],
+      visits: [240, 260, 280, 220, 250, 270],
+      pageViews: [8500, 9200, 9800, 8200, 9100, 9500]
+    }
   }
 })
 
@@ -126,6 +144,183 @@ const getScoreColor = (score: number) => {
   if (score >= 4.0) return 'text-primary'
   if (score >= 3.5) return 'text-warning'
   return 'text-danger'
+}
+
+// グラフデータの設定
+const salesChartData = computed(() => ({
+  labels: currentStoreData.value.monthlyData.labels,
+  datasets: [{
+    label: '売上 (円)',
+    data: currentStoreData.value.monthlyData.sales,
+    backgroundColor: '#3b82f6',
+    borderColor: '#3b82f6',
+    borderWidth: 0,
+    borderRadius: 6,
+    borderSkipped: false
+  }]
+}))
+
+
+// 複合グラフデータ（予約数、来店組数、PV数）
+const combinedChartData = computed(() => ({
+  labels: currentStoreData.value.monthlyData.labels,
+  datasets: [
+    {
+      type: 'bar' as const,
+      label: '予約数',
+      data: currentStoreData.value.monthlyData.reservations,
+      backgroundColor: '#059669',
+      borderColor: '#059669',
+      borderWidth: 0,
+      borderRadius: 4,
+      yAxisID: 'y',
+      order: 3
+    },
+    {
+      type: 'bar' as const,
+      label: '来店組数',
+      data: currentStoreData.value.monthlyData.visits,
+      backgroundColor: '#d97706',
+      borderColor: '#d97706',
+      borderWidth: 0,
+      borderRadius: 4,
+      yAxisID: 'y',
+      order: 2
+    },
+    {
+      type: 'line' as const,
+      label: 'PV数',
+      data: currentStoreData.value.monthlyData.pageViews,
+      borderColor: '#dc2626',
+      backgroundColor: 'transparent',
+      borderWidth: 3,
+      pointBackgroundColor: '#dc2626',
+      pointBorderColor: '#ffffff',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0.4,
+      fill: false,
+      yAxisID: 'y1',
+      order: 1
+    }
+  ]
+}))
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    },
+    title: {
+      display: false
+    }
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: '#f3f4f6',
+        borderColor: '#e5e7eb'
+      },
+      ticks: {
+        font: {
+          size: 11,
+          family: 'Inter'
+        },
+        color: '#6b7280'
+      }
+    },
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        font: {
+          size: 11,
+          family: 'Inter'
+        },
+        color: '#6b7280'
+      }
+    }
+  }
+}
+
+// 複合グラフのオプション
+const combinedChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    mode: 'index' as const,
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      position: 'top' as const,
+      labels: {
+        usePointStyle: true,
+        padding: 15,
+        font: {
+          size: 12,
+          weight: '500',
+          family: 'Inter'
+        },
+        color: '#374151'
+      }
+    },
+    title: {
+      display: false
+    }
+  },
+  scales: {
+    y: {
+      type: 'linear' as const,
+      display: true,
+      position: 'left' as const,
+      beginAtZero: true,
+      grid: {
+        color: '#f3f4f6',
+        borderColor: '#e5e7eb'
+      },
+      ticks: {
+        font: {
+          size: 11,
+          family: 'Inter'
+        },
+        color: '#6b7280'
+      }
+    },
+    y1: {
+      type: 'linear' as const,
+      display: true,
+      position: 'right' as const,
+      beginAtZero: true,
+      grid: {
+        drawOnChartArea: false,
+      },
+      ticks: {
+        font: {
+          size: 11,
+          family: 'Inter'
+        },
+        color: '#6b7280'
+      }
+    },
+    x: {
+      grid: {
+        display: false
+      },
+      ticks: {
+        font: {
+          size: 11,
+          family: 'Inter'
+        },
+        color: '#6b7280'
+      }
+    }
+  }
 }
 
 const reviewCategories = [
@@ -173,6 +368,50 @@ const reviewCategories = [
       </div>
     </div>
 
+    <!-- Charts Section -->
+    <div class="row mb-4">
+      <!-- 売上グラフ -->
+      <div class="col-lg-6 mb-4">
+        <div class="card fade-in-up">
+          <div class="card-body">
+            <h5 class="card-title mb-4">売上推移（6ヶ月）</h5>
+            <div class="chart-wrapper">
+              <Bar :data="salesChartData" :options="chartOptions" />
+            </div>
+            <div class="chart-summary mt-3">
+              <div class="current-value">{{ formatCurrency(currentStoreData.monthlyData.sales[5]) }}</div>
+              <div class="chart-label">今月実績</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 複合グラフ（予約数、来店組数、PV数） -->
+      <div class="col-lg-6 mb-4">
+        <div class="card fade-in-up">
+          <div class="card-body">
+            <h5 class="card-title mb-4">予約・来店・PV推移（6ヶ月）</h5>
+            <div class="chart-wrapper">
+              <Bar :data="combinedChartData" :options="combinedChartOptions" />
+            </div>
+            <div class="row mt-3">
+              <div class="col-4 text-center">
+                <div class="metric-value text-success">{{ currentStoreData.monthlyData.reservations[5] }}件</div>
+                <div class="metric-label">予約数</div>
+              </div>
+              <div class="col-4 text-center">
+                <div class="metric-value text-warning">{{ currentStoreData.monthlyData.visits[5] }}組</div>
+                <div class="metric-label">来店組数</div>
+              </div>
+              <div class="col-4 text-center">
+                <div class="metric-value text-danger">{{ currentStoreData.monthlyData.pageViews[5].toLocaleString() }}</div>
+                <div class="metric-label">PV数</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Review Scores -->
     <div class="row mb-4">
@@ -634,6 +873,57 @@ const reviewCategories = [
   color: var(--text-primary);
 }
 
+.chart-container {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  height: 100%;
+  border: 1px solid var(--border-light);
+  transition: var(--transition-normal);
+}
+
+.chart-container:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.chart-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.chart-wrapper {
+  height: 300px;
+  margin-bottom: 1rem;
+}
+
+.chart-summary {
+  text-align: center;
+}
+
+.current-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.chart-label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.metric-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
 .review-count {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -790,6 +1080,14 @@ const reviewCategories = [
   
   .bar-value {
     font-size: 0.6875rem;
+  }
+  
+  .chart-wrapper {
+    height: 140px;
+  }
+  
+  .current-value {
+    font-size: 1rem;
   }
 }
 </style>
