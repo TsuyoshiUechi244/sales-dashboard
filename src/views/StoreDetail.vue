@@ -53,7 +53,9 @@ const storeData = ref({
       sales: [2650000, 2720000, 2800000, 2600000, 2750000, 2800000],
       reservations: [450, 480, 520, 420, 490, 510],
       visits: [380, 410, 440, 360, 420, 430],
-      pageViews: [12500, 13200, 14800, 11900, 13800, 14200]
+      pageViews: [12500, 13200, 14800, 11900, 13800, 14200],
+      cancellationRate: [8, 12, 15, 18, 10, 12], // キャンセル率（%）
+      conversionRate: [3.2, 3.8, 4.1, 3.0, 3.6, 3.8] // コンバージョン率（%）
     }
   },
   'B001': {
@@ -98,7 +100,9 @@ const storeData = ref({
       sales: [1580000, 1620000, 1650000, 1550000, 1600000, 1650000],
       reservations: [280, 300, 320, 260, 290, 310],
       visits: [240, 260, 280, 220, 250, 270],
-      pageViews: [8500, 9200, 9800, 8200, 9100, 9500]
+      pageViews: [8500, 9200, 9800, 8200, 9100, 9500],
+      cancellationRate: [15, 18, 20, 22, 16, 18], // キャンセル率（%）
+      conversionRate: [2.8, 3.2, 3.4, 2.6, 3.0, 3.2] // コンバージョン率（%）
     }
   }
 })
@@ -167,8 +171,8 @@ const combinedChartData = computed(() => ({
   datasets: [
     {
       type: 'bar' as const,
-      label: '予約数',
-      data: currentStoreData.value.monthlyData.reservations,
+      label: '来店組数',
+      data: currentStoreData.value.monthlyData.visits,
       backgroundColor: '#059669',
       borderColor: '#059669',
       borderWidth: 0,
@@ -178,8 +182,8 @@ const combinedChartData = computed(() => ({
     },
     {
       type: 'bar' as const,
-      label: '来店組数',
-      data: currentStoreData.value.monthlyData.visits,
+      label: '予約数',
+      data: currentStoreData.value.monthlyData.reservations,
       backgroundColor: '#d97706',
       borderColor: '#d97706',
       borderWidth: 0,
@@ -394,18 +398,35 @@ const reviewCategories = [
             <div class="chart-wrapper">
               <Bar :data="combinedChartData" :options="combinedChartOptions" />
             </div>
-            <div class="row mt-3">
-              <div class="col-4 text-center">
-                <div class="metric-value text-success">{{ currentStoreData.monthlyData.reservations[5] }}件</div>
-                <div class="metric-label">予約数</div>
+            <div class="metrics-grid mt-3">
+              <div class="metric-item combined-metric">
+                <div class="metric-value text-warning">
+                  {{ currentStoreData.monthlyData.reservations[5] }}件/({{ Math.round(currentStoreData.monthlyData.reservations.reduce((sum, val) => sum + val, 0) / currentStoreData.monthlyData.reservations.length) }}件)
+                </div>
+                <div class="metric-label">今月の予約数/(平均予約数)</div>
               </div>
-              <div class="col-4 text-center">
-                <div class="metric-value text-warning">{{ currentStoreData.monthlyData.visits[5] }}組</div>
-                <div class="metric-label">来店組数</div>
+              <div class="metric-item combined-metric">
+                <div class="metric-value text-success">
+                  {{ currentStoreData.monthlyData.visits[5] }}組/({{ Math.round(currentStoreData.monthlyData.visits.reduce((sum, val) => sum + val, 0) / currentStoreData.monthlyData.visits.length) }}組)
+                </div>
+                <div class="metric-label">今月の来店組数/(平均来店組数)</div>
               </div>
-              <div class="col-4 text-center">
-                <div class="metric-value text-danger">{{ currentStoreData.monthlyData.pageViews[5].toLocaleString() }}</div>
-                <div class="metric-label">PV数</div>
+              <div class="metric-item combined-metric">
+                <div class="metric-value text-danger">
+                  {{ currentStoreData.monthlyData.pageViews[5].toLocaleString() }}/({{ Math.round(currentStoreData.monthlyData.pageViews.reduce((sum, val) => sum + val, 0) / currentStoreData.monthlyData.pageViews.length).toLocaleString() }})
+                </div>
+                <div class="metric-label">今月のPV数/(平均PV数)</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value text-primary">{{ currentStoreData.monthlyData.conversionRate[5] }}%</div>
+                <div class="metric-label">コンバージョン率</div>
+              </div>
+              <div class="metric-item">
+                <div class="metric-value text-info">{{ currentStoreData.monthlyData.cancellationRate[5] }}%</div>
+                <div class="metric-label">キャンセル率</div>
+              </div>
+              <div class="metric-item empty-metric">
+                <!-- 空きスペース -->
               </div>
             </div>
           </div>
@@ -924,6 +945,43 @@ const reviewCategories = [
   font-weight: 600;
 }
 
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.metric-item {
+  text-align: center;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+}
+
+.metric-item.combined-metric .metric-value {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.metric-item.empty-metric {
+  background: transparent;
+  border: none;
+}
+
+.metric-item .metric-value {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.metric-item .metric-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
 .review-count {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -1084,6 +1142,23 @@ const reviewCategories = [
   
   .chart-wrapper {
     height: 140px;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .metric-item.combined-metric .metric-value {
+    font-size: 0.8rem;
+  }
+  
+  .metric-item .metric-value {
+    font-size: 0.875rem;
+  }
+  
+  .metric-item .metric-label {
+    font-size: 0.6875rem;
   }
   
   .current-value {
