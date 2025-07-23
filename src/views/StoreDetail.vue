@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Bar, Line } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend } from 'chart.js'
+import { Bar, Line, Radar } from 'vue-chartjs'
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, RadialLinearScale, Title, Tooltip, Legend } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, RadialLinearScale, Title, Tooltip, Legend)
 
 const route = useRoute()
 const storeId = route.params.id
@@ -56,6 +56,13 @@ const storeData = ref({
       pageViews: [12500, 13200, 14800, 11900, 13800, 14200],
       cancellationRate: [8, 12, 15, 18, 10, 12], // キャンセル率（%）
       conversionRate: [3.2, 3.8, 4.1, 3.0, 3.6, 3.8] // コンバージョン率（%）
+    },
+    radarScores: {
+      review: 85,
+      planQuality: 78,
+      pageContent: 92,
+      inventory: 88,
+      specialFeature: 75
     }
   },
   'B001': {
@@ -103,6 +110,13 @@ const storeData = ref({
       pageViews: [8500, 9200, 9800, 8200, 9100, 9500],
       cancellationRate: [15, 18, 20, 22, 16, 18], // キャンセル率（%）
       conversionRate: [2.8, 3.2, 3.4, 2.6, 3.0, 3.2] // コンバージョン率（%）
+    },
+    radarScores: {
+      review: 72,
+      planQuality: 68,
+      pageContent: 75,
+      inventory: 80,
+      specialFeature: 65
     }
   }
 })
@@ -334,6 +348,63 @@ const reviewCategories = [
   { key: 'cost', label: 'コストパフォーマンス' },
   { key: 'service', label: 'サービス' }
 ]
+
+// レーダーチャートの設定
+const radarCategories = [
+  { key: 'review', label: '口コミ' },
+  { key: 'planQuality', label: 'プラン品質・量' },
+  { key: 'pageContent', label: 'ページの充実度' },
+  { key: 'inventory', label: '在庫（優良品質・手仕舞い）' },
+  { key: 'specialFeature', label: '特集参画（主要特集）' }
+]
+
+const radarChartData = computed(() => ({
+  labels: radarCategories.map(cat => cat.label),
+  datasets: [{
+    label: '店舗評価',
+    data: radarCategories.map(cat => currentStoreData.value.radarScores[cat.key]),
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: '#3b82f6',
+    borderWidth: 3,
+    pointBackgroundColor: '#3b82f6',
+    pointBorderColor: '#ffffff',
+    pointBorderWidth: 2,
+    pointRadius: 6,
+    pointHoverRadius: 8
+  }]
+}))
+
+const radarChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false
+    }
+  },
+  scales: {
+    r: {
+      beginAtZero: true,
+      max: 100,
+      grid: {
+        color: '#f3f4f6'
+      },
+      angleLines: {
+        color: '#e5e7eb'
+      },
+      pointLabels: {
+        font: {
+          size: 12,
+          family: 'Inter'
+        },
+        color: '#374151'
+      },
+      ticks: {
+        display: false
+      }
+    }
+  }
+}
 </script>
 
 <template>
@@ -461,6 +532,45 @@ const reviewCategories = [
                     {{ '★'.repeat(Math.floor(currentStoreData.reviewScores[category.key])) }}{{ '☆'.repeat(5 - Math.floor(currentStoreData.reviewScores[category.key])) }}
                   </div>
                   <div class="score-value">{{ currentStoreData.reviewScores[category.key] }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Radar Chart Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card fade-in-up">
+          <div class="card-body">
+            <h5 class="card-title mb-4">総合評価分析</h5>
+            <div class="row">
+              <!-- Radar Chart -->
+              <div class="col-lg-6">
+                <div class="radar-chart-container">
+                  <Radar :data="radarChartData" :options="radarChartOptions" />
+                </div>
+              </div>
+              
+              <!-- Progress Bars -->
+              <div class="col-lg-6 mb-4">
+                <div class="radar-scores">
+                  <div v-for="category in radarCategories" :key="category.key" class="score-item">
+                    <div class="score-header">
+                      <span class="score-name">{{ category.label }}</span>
+                      <span class="score-value">{{ currentStoreData.radarScores[category.key] }}</span>
+                    </div>
+                    <div class="progress-container">
+                      <div class="progress-bar-custom">
+                        <div 
+                          class="progress-fill" 
+                          :style="{ width: currentStoreData.radarScores[category.key] + '%' }"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -988,6 +1098,81 @@ const reviewCategories = [
   margin-top: 0.25rem;
 }
 
+.radar-scores {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.score-item {
+  background: var(--bg-secondary);
+  padding: 1rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+}
+
+.score-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.score-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.score-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.progress-container {
+  width: 100%;
+}
+
+.progress-bar-custom {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #dc2626, #d97706, #059669);
+  border-radius: 4px;
+  transition: width 0.8s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 1px;
+}
+
+.radar-chart-container {
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  border: 1px solid var(--border-light);
+}
+
 .sales-chart {
   padding: 1rem 0;
 }
@@ -1163,6 +1348,19 @@ const reviewCategories = [
   
   .current-value {
     font-size: 1rem;
+  }
+  
+  .radar-chart-container {
+    height: 400px;
+    margin-top: 1rem;
+  }
+  
+  .radar-scores {
+    gap: 1rem;
+  }
+  
+  .score-item {
+    padding: 0.75rem;
   }
 }
 </style>
