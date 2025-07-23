@@ -164,6 +164,17 @@ const getScoreColor = (score: number) => {
   return 'text-danger'
 }
 
+const getSuggestionText = (categoryKey: string) => {
+  const suggestions = {
+    review: '口コミ返信率を向上させ、お客様とのコミュニケーションを強化しましょう。',
+    planQuality: '季節限定メニューの追加やプラン内容の見直しを検討してください。',
+    pageContent: 'TOP画像10枚を設定し、店舗の魅力をより詳しく紹介しましょう。',
+    inventory: '在庫管理システムの導入により、品質向上と効率化を図りましょう。',
+    specialFeature: '主要特集への積極的な参画により、露出機会を増やしましょう。'
+  }
+  return suggestions[categoryKey as keyof typeof suggestions] || '改善施策を検討しましょう。'
+}
+
 // グラフデータの設定
 const salesChartData = computed(() => ({
   labels: currentStoreData.value.monthlyData.labels,
@@ -579,6 +590,39 @@ const radarChartOptions = {
       </div>
     </div>
 
+    <!-- Improvement Suggestions -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card fade-in-up">
+          <div class="card-body">
+            <h5 class="card-title mb-4">
+              <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" stroke-width="2" fill="none"/>
+              </svg>
+              改善提案
+            </h5>
+            <div class="improvement-suggestions">
+              <div class="row">
+                <div v-for="category in radarCategories" :key="category.key" class="col-lg-6 mb-3">
+                  <div class="suggestion-card">
+                    <div class="suggestion-header">
+                      <h6 class="suggestion-title">{{ category.label }}</h6>
+                      <span :class="['score-badge', getScoreColor(currentStoreData.radarScores[category.key]).replace('text-', 'bg-')]">
+                        {{ currentStoreData.radarScores[category.key] }}
+                      </span>
+                    </div>
+                    <div class="suggestion-content">
+                      <p class="suggestion-text">{{ getSuggestionText(category.key) }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Store Information -->
     <div class="row mb-4">
       <div class="col-lg-8 mb-4">
@@ -745,7 +789,8 @@ const radarChartOptions = {
         </div>
       </div>
     </div>
-  </div>
+
+</div>
 </template>
 
 <style scoped>
@@ -1261,6 +1306,71 @@ const radarChartOptions = {
   font-weight: 700;
 }
 
+.suggestions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  gap: 1rem;
+  transition: var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.suggestion-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.suggestion-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.suggestion-category {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.category-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+}
+
+.score-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--text-white);
+}
+
+.suggestion-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .store-detail-page {
     padding: 1rem;
@@ -1361,6 +1471,24 @@ const radarChartOptions = {
   
   .score-item {
     padding: 0.75rem;
+  }
+  
+  .suggestion-card {
+    padding: 1rem;
+  }
+  
+  .suggestion-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .suggestion-actions {
+    justify-content: stretch;
+  }
+  
+  .suggestion-actions .btn {
+    flex: 1;
   }
 }
 </style>
