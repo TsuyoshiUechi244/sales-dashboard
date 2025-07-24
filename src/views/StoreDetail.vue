@@ -861,7 +861,7 @@ const radarChartOptions = {
         </div>
       </div>
     </div>
-
+-edit-modal
     <!-- 改善提案編集モーダル -->
     <div v-if="showEditModal" class="modal-overlay" @click="cancelEdit">
       <div class="modal-content" @click.stop>
@@ -912,7 +912,6 @@ const radarChartOptions = {
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -1105,7 +1104,6 @@ const radarChartOptions = {
   flex-direction: column;
   gap: 0.5rem;
 }
-
 .improvements-list {
   list-style: none;
   padding: 0;
@@ -1735,7 +1733,6 @@ const radarChartOptions = {
     flex: 1;
   }
 }
-
 /* モーダルスタイル */
 .modal-overlay {
   position: fixed;
