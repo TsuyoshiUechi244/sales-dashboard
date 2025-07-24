@@ -44,9 +44,42 @@ const storeData = ref({
       target: 2900000
     },
     popularPlans: [
-      { name: 'プレミアムコース', price: 15000, popularity: 95 },
-      { name: 'スタンダードコース', price: 8000, popularity: 88 },
-      { name: 'ライトコース', price: 5000, popularity: 72 }
+      { 
+        name: 'プレミアムコース', 
+        price: 15000, 
+        overview: '厳選された最高級食材を使用した特別なコース',
+        mealType: 'ディナー',
+        duration: '3時間',
+        improvements: [
+          'プラン写真を5枚設定してください',
+          'メッセージプレート対応をおこなってください',
+          '入店可能時間の長さを延ばしてください'
+        ]
+      },
+      { 
+        name: 'スタンダードコース', 
+        price: 8000, 
+        overview: 'バランスの取れた人気のコース料理',
+        mealType: 'ディナー',
+        duration: '2.5時間',
+        improvements: [
+          'メニュー内容を詳しく記載してください',
+          'ドリンクを付けてください',
+          '予約受け入れ可能人数の幅広さを広げてください'
+        ]
+      },
+      { 
+        name: 'ライトコース', 
+        price: 5000, 
+        overview: 'お手軽に楽しめるカジュアルコース',
+        mealType: 'ランチ',
+        duration: '2時間',
+        improvements: [
+          'メニュータイトルに具体的な皿数を記載してください',
+          '割引率をアップしてください',
+          '手仕舞いの設定を延長してください'
+        ]
+      }
     ],
     monthlyData: {
       labels: ['10月', '11月', '12月', '1月', '2月', '3月'],
@@ -79,7 +112,6 @@ const storeData = ref({
     access: 'JR山手線 池袋駅 徒歩5分',
     monthlyGrowth: 5,
     yearlyGrowth: 12,
-    issues: ['プラン見直し必要'],
     lastUpdate: '2024-03-15',
     description: '池袋の賑やかな街に位置する店舗。アクセス抜群で幅広い年齢層のお客様にご利用いただいています。',
     features: ['カード利用可', '禁煙席あり', 'テイクアウト可'],
@@ -369,6 +401,34 @@ const radarCategories = [
   { key: 'specialFeature', label: '特集参画（主要特集）' }
 ]
 
+// 改善状態の管理
+const improvementStatus = ref<Record<string, boolean>>({})
+const showEditModal = ref(false)
+const editingCategory = ref<string>('')
+const editingSuggestion = ref<string>('')
+
+const toggleImprovement = (categoryKey: string) => {
+  improvementStatus.value[categoryKey] = !improvementStatus.value[categoryKey]
+}
+
+const editImprovement = (categoryKey: string) => {
+  editingCategory.value = categoryKey
+  editingSuggestion.value = getSuggestionText(categoryKey)
+  showEditModal.value = true
+}
+
+const saveImprovement = () => {
+  // ここで実際の保存処理を行う
+  console.log('保存:', editingCategory.value, editingSuggestion.value)
+  showEditModal.value = false
+}
+
+const cancelEdit = () => {
+  showEditModal.value = false
+  editingCategory.value = ''
+  editingSuggestion.value = ''
+}
+
 const radarChartData = computed(() => ({
   labels: radarCategories.map(cat => cat.label),
   datasets: [{
@@ -602,17 +662,88 @@ const radarChartOptions = {
               改善提案
             </h5>
             <div class="improvement-suggestions">
-              <div class="row">
-                <div v-for="category in radarCategories" :key="category.key" class="col-lg-6 mb-3">
-                  <div class="suggestion-card">
-                    <div class="suggestion-header">
+              <div class="suggestion-list">
+                <div v-for="category in radarCategories" :key="category.key" class="suggestion-item">
+                  <div class="suggestion-main">
+                    <div class="suggestion-header-inline">
                       <h6 class="suggestion-title">{{ category.label }}</h6>
                       <span :class="['score-badge', getScoreColor(currentStoreData.radarScores[category.key]).replace('text-', 'bg-')]">
                         {{ currentStoreData.radarScores[category.key] }}
                       </span>
                     </div>
-                    <div class="suggestion-content">
-                      <p class="suggestion-text">{{ getSuggestionText(category.key) }}</p>
+                    <p class="suggestion-text">{{ getSuggestionText(category.key) }}</p>
+                  </div>
+                  <div class="suggestion-actions">
+                    <button class="btn btn-outline-secondary btn-sm" @click="editImprovement(category.key)">
+                      <svg class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="2" fill="none"/>
+                      </svg>
+                      編集
+                    </button>
+                    <button 
+                      :class="['btn', 'btn-sm', improvementStatus[category.key] ? 'btn-success' : 'btn-primary']"
+                      @click="toggleImprovement(category.key)"
+                    >
+                      <svg v-if="!improvementStatus[category.key]" class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" stroke="currentColor" stroke-width="2" fill="none"/>
+                      </svg>
+                      <svg v-else class="me-1" width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <polyline points="20,6 9,17 4,12" stroke="currentColor" stroke-width="2" fill="none"/>
+                      </svg>
+                      {{ improvementStatus[category.key] ? '改善済み' : '改善' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plans -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card fade-in-up">
+          <div class="card-body">
+            <h5 class="card-title mb-4">プラン</h5>
+            <div class="row">
+              <div v-for="plan in currentStoreData.popularPlans" :key="plan.name" class="col-md-4 mb-3">
+                <div class="plan-card">
+                  <div class="plan-header">
+                    <h6 class="plan-name">{{ plan.name }}</h6>
+                    <div class="plan-price">{{ formatCurrency(plan.price) }}</div>
+                  </div>
+                  
+                  <div class="plan-details">
+                    <div class="plan-overview">
+                      <div class="detail-label">プラン概要</div>
+                      <div class="detail-value">{{ plan.overview }}</div>
+                    </div>
+                    
+                    <div class="plan-info-row">
+                      <div class="plan-info-item">
+                        <div class="detail-label">種別</div>
+                        <div class="detail-value">
+                          <span :class="['meal-type-badge', plan.mealType === 'ランチ' ? 'lunch' : 'dinner']">
+                            {{ plan.mealType }}
+                          </span>
+                        </div>
+                      </div>
+                      <div class="plan-info-item">
+                        <div class="detail-label">時間</div>
+                        <div class="detail-value">{{ plan.duration }}</div>
+                      </div>
+                    </div>
+                    
+                    <div class="plan-improvements">
+                      <div class="detail-label">改善点</div>
+                      <ul class="improvements-list">
+                        <li v-for="improvement in plan.improvements" :key="improvement" class="improvement-item">
+                          {{ improvement }}
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -714,7 +845,6 @@ const radarChartOptions = {
           </div>
         </div>
       </div>
-
       <div class="col-lg-4 mb-4">
         <div class="card fade-in-up">
           <div class="card-body">
@@ -732,65 +862,58 @@ const radarChartOptions = {
       </div>
     </div>
 
-    <!-- Popular Plans -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="card fade-in-up">
-          <div class="card-body">
-            <h5 class="card-title mb-4">人気プラン</h5>
-            <div class="row">
-              <div v-for="plan in currentStoreData.popularPlans" :key="plan.name" class="col-md-4 mb-3">
-                <div class="plan-card">
-                  <div class="plan-header">
-                    <h6 class="plan-name">{{ plan.name }}</h6>
-                    <div class="plan-price">{{ formatCurrency(plan.price) }}</div>
-                  </div>
-                  <div class="plan-popularity">
-                    <div class="popularity-label">人気度</div>
-                    <div class="popularity-bar">
-                      <div class="popularity-fill" :style="{ width: plan.popularity + '%' }"></div>
-                    </div>
-                    <div class="popularity-value">{{ plan.popularity }}%</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <!-- 改善提案編集モーダル -->
+    <div v-if="showEditModal" class="modal-overlay" @click="cancelEdit">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h5 class="modal-title">改善提案の編集</h5>
+          <button type="button" class="btn-close" @click="cancelEdit">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2"/>
+              <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">カテゴリ</label>
+            <input 
+              type="text" 
+              class="form-control" 
+              :value="radarCategories.find(cat => cat.key === editingCategory)?.label" 
+              readonly
+            >
           </div>
+          
+          <div class="form-group">
+            <label class="form-label">改善提案内容</label>
+            <textarea 
+              v-model="editingSuggestion"
+              class="form-control"
+              rows="4"
+              placeholder="改善提案の内容を入力してください"
+            ></textarea>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" @click="cancelEdit">
+            キャンセル
+          </button>
+          <button type="button" class="btn btn-primary" @click="saveImprovement">
+            <svg class="me-2" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="2" fill="none"/>
+              <polyline points="17,21 17,13 7,13 7,21" stroke="currentColor" stroke-width="2" fill="none"/>
+              <polyline points="7,3 7,8 15,8" stroke="currentColor" stroke-width="2" fill="none"/>
+            </svg>
+            保存
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Issues Section -->
-    <div v-if="currentStoreData.issues.length > 0" class="row mb-4">
-      <div class="col-12">
-        <div class="card fade-in-up">
-          <div class="card-body">
-            <h5 class="card-title mb-4">
-              <svg class="me-2" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="2" fill="none"/>
-                <line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="2"/>
-                <line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2"/>
-              </svg>
-              改善が必要な課題
-            </h5>
-            <div class="issues-list">
-              <div v-for="(issue, index) in currentStoreData.issues" :key="index" class="issue-item">
-                <div class="issue-priority">高</div>
-                <div class="issue-content">
-                  <div class="issue-title">{{ issue }}</div>
-                  <div class="issue-date">発見日: {{ currentStoreData.lastUpdate }}</div>
-                </div>
-                <div class="issue-actions">
-                  <button class="btn btn-outline-primary btn-sm">対応</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-</div>
+  </div>
 </template>
 
 <style scoped>
@@ -924,37 +1047,82 @@ const radarChartOptions = {
   color: var(--accent-color);
 }
 
-.plan-popularity {
+.plan-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plan-overview {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.popularity-label {
+.plan-info-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.plan-info-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
   font-size: 0.875rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
 
-.popularity-bar {
-  height: 8px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.popularity-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--success-color), var(--accent-color));
-  border-radius: 4px;
-  transition: width 0.6s ease;
-}
-
-.popularity-value {
+.detail-value {
   font-size: 0.875rem;
-  font-weight: 600;
   color: var(--text-primary);
-  text-align: right;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.meal-type-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-white);
+}
+
+.meal-type-badge.lunch {
+  background-color: var(--warning-color);
+}
+
+.meal-type-badge.dinner {
+  background-color: var(--accent-color);
+}
+
+.plan-improvements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.improvements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.improvement-item {
+  padding: 0.5rem 0.75rem;
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  color: #92400e;
+  line-height: 1.3;
 }
 
 .issues-list {
@@ -1489,6 +1657,220 @@ const radarChartOptions = {
   
   .suggestion-actions .btn {
     flex: 1;
+  }
+}
+
+/* 改善提案の1行表示スタイル */
+.suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  gap: 1rem;
+  transition: var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+}
+
+.suggestion-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.suggestion-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.suggestion-header-inline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.suggestion-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.suggestion-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-weight: 500;
+  margin: 0;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .suggestion-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .suggestion-actions {
+    justify-content: stretch;
+  }
+  
+  .suggestion-actions .btn {
+    flex: 1;
+  }
+}
+
+/* モーダルスタイル */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  transition: var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-close:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  transition: var(--transition-fast);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: inherit;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control[readonly] {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.form-control textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border-light);
+  background-color: var(--bg-secondary);
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem 1.5rem;
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .modal-footer .btn {
+    width: 100%;
   }
 }
 </style>
